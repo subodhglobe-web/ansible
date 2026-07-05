@@ -1,0 +1,23 @@
+---
+- name: Creating directory
+  hosts: lab
+  tasks:
+    - name: create a webserver directory
+      ansible.builtin.file:
+        path: /webserver
+        state: directory
+        owner: root
+        group: root
+        mode: '2751'
+
+    - name: Create a symbolic link
+      ansible.builtin.file:
+        src: /webserver
+        dest: /var/www/html/webserver
+        state: link
+
+    - name: File creation
+      ansible.builtin.copy:
+        content: 'Welcome to Learning Ansible'
+        dest: /webserver/index.html
+        setype: httpd_sys_content_t
