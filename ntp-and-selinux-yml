@@ -1,1 +1,58 @@
+Question 1) Install RHEL role and create a playbook for ntp server with name ntp-playbook1.yaml
 
+a) ntp should be installed on all the nodes
+b) timesync role should be used
+c) ntp IP should be used 0.rhel.pool.ntp.org
+
+## sudo yum install rhel-system-roles -y 
+[ Instead of writing complex scripts, you use these pre-built Ansible roles to automate common administrative tasks such as Sconfiguring IP addresses or LVM volumes, file systems]
+
+---
+- name: setup NTP server
+  hosts: all
+  become: true
+  vars:
+    timesync_ntp_provider: chrony
+    timesync_ntp_servers:
+      - hostname: 0.rhel.pool.ntp.org
+        iburst: true
+
+  roles:
+    - rhel-system-roles.timesync
+
+
+Question 2) SElinux set to Enforcing mode through Yaml.
+---
+- hosts: all
+  become: true
+  become_method: sudo
+  become_user: root
+  vars:
+    # Use "targeted" SELinux policy type
+    selinux_policy: targeted    
+# Set "enforcing" mode    
+    selinux_state: enforcing
+  tasks:
+    - name: execute the role and catch errors
+      block:
+        - name: Include selinux role
+          include_role:
+            name: rhel-system-roles.selinux
+      rescue:
+        # Fail if failed for a different reason than selinux_reboot_required.
+        - name: handle errors
+          fail:
+            msg: "role failed"
+          when: not selinux_reboot_required
+
+        - name: restart managed host
+          reboot:
+
+        - name: wait for managed host to come back
+          wait_for_connection:
+            delay: 10
+            timeout: 300
+
+        - name: reapply the role
+          include_role:
+            name: rhel-system-roles.selinux    #  ⬅️ ⬅️ 👈👈👈👈 
